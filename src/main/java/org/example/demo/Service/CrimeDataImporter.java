@@ -28,14 +28,8 @@ public class CrimeDataImporter implements CommandLineRunner {
         }
 
         ClassPathResource resource =
-                new ClassPathResource("data/CRIMEDATASET.csv");
+                new ClassPathResource("data/crimedataset.csv");
 
-        if (!resource.exists()) {
-            System.err.println(
-                    "ERROR: CRIMEDATASET.csv is missing from the application JAR."
-            );
-            return;
-        }
         try (
                 Reader reader =
                         new InputStreamReader(resource.getInputStream());
