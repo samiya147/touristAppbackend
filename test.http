@@ -1,0 +1,10 @@
+
+POST http://localhost:8080/api/routes
+Content-Type: application/json
+
+{
+  "startLon": 72.992133,
+  "startLat": 19.206494,
+  "endLon": 72.974,
+  "endLat": 19.193
+}
