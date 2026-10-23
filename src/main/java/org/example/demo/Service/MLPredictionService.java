@@ -1,7 +1,9 @@
+
 package org.example.demo.Service;
 
 import org.example.demo.dto.MLPredictionRequest;
 import org.example.demo.dto.MLPredictionResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -9,17 +11,16 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class MLPredictionService {
 
-
     private final RestTemplate restTemplate = new RestTemplate();
 
-    private static final String ML_SERVICE_URL =
-            "http://localhost:8000/predict";
+    @Value("${ml.service.url}")
+    private String mlServiceUrl;
 
     public double predictSafety(MLPredictionRequest request) {
 
         ResponseEntity<MLPredictionResponse> response =
                 restTemplate.postForEntity(
-                        ML_SERVICE_URL,
+                        mlServiceUrl,
                         request,
                         MLPredictionResponse.class
                 );
