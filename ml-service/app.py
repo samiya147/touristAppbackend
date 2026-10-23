@@ -634,8 +634,10 @@ ORS_DIRECTIONS_URL = (
 )
 SPRING_SAFETY_URL = os.getenv(
     "SPRING_SAFETY_URL",
-    "http://127.0.0.1:8080/api/safety/predict"
+    "https://touristappbackendspirngbooot.onrender.com/api/safety/predict"
 )
+
+app = FastAPI()
 app = FastAPI(
     title="Tourist Safety ML Service",
     description="Predicts a safety score using nearby crime data",
