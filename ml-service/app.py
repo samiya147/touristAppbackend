@@ -624,7 +624,7 @@ import requests
 import joblib
 import numpy as np
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 # OpenRouteService configuration
 ORS_API_KEY = os.getenv("ORS_API_KEY")
 
@@ -671,11 +671,37 @@ class SafetyFeatures(BaseModel):
     crime_density_500m: float = Field(ge=0)
     nearby_record_count: float = Field(ge=0)
 
+
 class MultipleRoutesRequest(BaseModel):
     origin_latitude: float = Field(ge=-90, le=90)
     origin_longitude: float = Field(ge=-180, le=180)
     destination_latitude: float = Field(ge=-90, le=90)
     destination_longitude: float = Field(ge=-180, le=180)
+
+    @model_validator(mode="after")
+    def validate_coordinates(self):
+        if (
+            self.origin_latitude == -90
+            and self.origin_longitude == -180
+        ):
+            raise ValueError("Origin coordinates are placeholders.")
+
+        if (
+            self.destination_latitude == -90
+            and self.destination_longitude == -180
+        ):
+            raise ValueError("Destination coordinates are placeholders.")
+
+        if (
+            self.origin_latitude == self.destination_latitude
+            and self.origin_longitude == self.destination_longitude
+        ):
+            raise ValueError(
+                "Origin and destination must be different."
+            )
+
+        return self
+
 @app.get("/")
 def home():
     return {
@@ -768,8 +794,40 @@ def score_route_points(coordinates, sample_limit=20):
             },
             timeout=30
         )
-        response.raise_for_status()
-        result = response.json()
+
+if not response.ok:
+    try:
+        ors_error = response.json()
+    except ValueError:
+        ors_error = {"message": response.text[:1000]}
+
+    error_details = ors_error.get("error", {})
+    error_code = error_details.get("code")
+    error_message = error_details.get(
+        "message", "Unknown routing error"
+    )
+
+    if error_code == 2010:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "ORS could not find a routable road near the "
+                "origin or destination. Try coordinates closer "
+                "to a road. ORS says: " + error_message
+            ),
+        )
+
+    raise HTTPException(
+        status_code=502,
+        detail={
+            "message": "OpenRouteService routing failed",
+            "ors_status": response.status_code,
+            "ors_error": ors_error,
+        },
+    )
+
+result = response.json()
+
 
         score = float(result["safety_score"])
 
