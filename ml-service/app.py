@@ -835,8 +835,14 @@ def get_alternative_routes(data: MultipleRoutesRequest):
             headers=headers,
             timeout=30
         )
-        response.raise_for_status()
-        result = response.json()
+       print("ORS URL:", ORS_DIRECTIONS_URL)
+
+       print("ORS STATUS:", response.status_code)
+
+       print("ORS RESPONSE:", response.text[:2000])
+
+       response.raise_for_status()
+       result = response.json()
 
         routes = []
 
