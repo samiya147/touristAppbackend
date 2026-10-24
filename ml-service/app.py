@@ -783,6 +783,9 @@ def score_route_points(coordinates, sample_limit=20):
 
     scores = []
 
+
+    scores = []
+
     for index in indices:
         longitude, latitude = coordinates[index]
 
@@ -790,44 +793,13 @@ def score_route_points(coordinates, sample_limit=20):
             SPRING_SAFETY_URL,
             json={
                 "latitude": latitude,
-                "longitude": longitude
+                "longitude": longitude,
             },
-            timeout=30
+            timeout=30,
         )
 
-if not response.ok:
-    try:
-        ors_error = response.json()
-    except ValueError:
-        ors_error = {"message": response.text[:1000]}
-
-    error_details = ors_error.get("error", {})
-    error_code = error_details.get("code")
-    error_message = error_details.get(
-        "message", "Unknown routing error"
-    )
-
-    if error_code == 2010:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                "ORS could not find a routable road near the "
-                "origin or destination. Try coordinates closer "
-                "to a road. ORS says: " + error_message
-            ),
-        )
-
-    raise HTTPException(
-        status_code=502,
-        detail={
-            "message": "OpenRouteService routing failed",
-            "ors_status": response.status_code,
-            "ors_error": ors_error,
-        },
-    )
-
-result = response.json()
-
+        response.raise_for_status()
+        result = response.json()
 
         score = float(result["safety_score"])
 
@@ -840,25 +812,12 @@ result = response.json()
             "safety_score": score,
             "safety_category": result.get(
                 "safety_category", "Unknown"
-            )
+            ),
         })
 
     average_score = sum(
         point["safety_score"] for point in scores
     ) / len(scores)
-
-    if average_score >= 75:
-        category = "Safe"
-    elif average_score >= 50:
-        category = "Moderate"
-    else:
-        category = "High Risk"
-
-    return {
-        "safety_score": round(average_score, 2),
-        "safety_category": category,
-        "sampled_points": scores
-    }
 
 
 @app.post("/routes")
